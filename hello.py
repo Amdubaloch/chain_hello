@@ -3,6 +3,9 @@ import chainlit as cl
 from dotenv import find_dotenv, load_dotenv
 from agents import Agent, RunConfig, AsyncOpenAI, OpenAIChatCompletionsModel, Runner
 
+import json
+from datetime import datetime
+
 load_dotenv(find_dotenv())
 
 gemini_api_key = os.getenv("GEMINI_API_KEY")
@@ -32,6 +35,13 @@ agent1 = Agent(
 async def hendle_chat_start():
     cl.user_session.set("history", [])
     await cl.Message(content="Hello! How can I assist you today?").send()
+
+@cl.on_chat_end
+async def save_history():
+    history = cl.user_session.get("history", [])
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    with open(f"chat_history_{timestamp}.json", "w") as f:
+        json.dump(history, f, indent=2)
 
 
 @cl.on_message

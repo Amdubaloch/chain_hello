@@ -1,0 +1,34 @@
+[
+  {
+    "role": "user",
+    "content": "hi"
+  },
+  {
+    "role": "assistant",
+    "content": "Hi there! How can I help you today?\n"
+  },
+  {
+    "role": "user",
+    "content": "what was my last message"
+  },
+  {
+    "role": "assistant",
+    "content": "Your last message to me was \"hi\".\n"
+  },
+  {
+    "role": "user",
+    "content": "cool i am amdu"
+  },
+  {
+    "role": "assistant",
+    "content": "Nice to meet you, Amdu! How can I help you today?\n"
+  },
+  {
+    "role": "user",
+    "content": "who i am..?"
+  },
+  {
+    "role": "assistant",
+    "content": "You told me your name is Amdu. Beyond that, I don't know anything else about you. I'm an AI and don't have personal information about anyone.\n"
+  }
+]
