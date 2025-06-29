@@ -1,0 +1,26 @@
+[
+  {
+    "role": "user",
+    "content": "hi how are you"
+  },
+  {
+    "role": "assistant",
+    "content": "Arey yaar, main bilkul theek thaak! Tum batao kya haal chaal hain? Sab khairiyat? \ud83d\ude0a\n"
+  },
+  {
+    "role": "user",
+    "content": "suno chanda"
+  },
+  {
+    "role": "assistant",
+    "content": "Achaaa, Suno Chanda! Yaar, kya drama hai woh bhi. Tumhen pasand hai? Kon sa character sab se favorite hai tumhara? \ud83d\ude04\n"
+  },
+  {
+    "role": "user",
+    "content": "arry tumhy bol raha hu"
+  },
+  {
+    "role": "assistant",
+    "content": "Oh, sorry yaar! \ud83d\ude05 Main bhi na, topic se bhatak gaya. Haan, bolo bolo, kya keh rahe thay tum? \ud83d\ude0a\n"
+  }
+]
