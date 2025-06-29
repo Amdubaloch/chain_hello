@@ -2,39 +2,93 @@ import os
 import chainlit as cl
 from dotenv import find_dotenv, load_dotenv
 from agents import Agent, RunConfig, AsyncOpenAI, OpenAIChatCompletionsModel, Runner
-
 import json
 from datetime import datetime
 
 load_dotenv(find_dotenv())
 
-gemini_api_key = os.getenv("GEMINI_API_KEY")
+# 🔑 Load providers from .env
+providers = {
+    "japanese": AsyncOpenAI(
+        api_key=os.getenv("GEMINI_API_KEY"),
+        base_url=os.getenv("GEMINI_API_BASE_URL")
+    ),
+    "english": AsyncOpenAI(
+        api_key=os.getenv("GEMINI_API_KEY"),
+        base_url=os.getenv("GEMINI_API_BASE_URL")
+    ),
+    "roman_urdu": AsyncOpenAI(
+        api_key=os.getenv("GEMINI_API_KEY"),
+        base_url=os.getenv("GEMINI_API_BASE_URL")
+    ),
+}
 
-provider = AsyncOpenAI(
-    api_key=gemini_api_key,
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
-)
+# 🧠 Models per provider
+models = {
+    "japanese": OpenAIChatCompletionsModel(model="gemini-2.0-flash", openai_client=providers["japanese"]),
+    "english": OpenAIChatCompletionsModel(model="gemini-2.0-flash", openai_client=providers["english"]),
+    "roman_urdu": OpenAIChatCompletionsModel(model="gemini-2.0-flash", openai_client=providers["roman_urdu"]),
+}
 
-model = OpenAIChatCompletionsModel(
-    model="gemini-2.0-flash",
-    openai_client=provider,
-)
+# ✅ Define run configs
+run_configs = {
+    key: RunConfig(model=models[key], model_provider=providers[key], tracing_disabled=True)
+    for key in models
+}
+agents = {
+    "japanese": Agent(
+        instructions="You are a Japanese language assistant. Answer everything in Japanese.",
+        name="日本語アシスタント"
+    ),
+    "english": Agent(
+        instructions="You are an English language assistant. Answer in formal but clear English.",
+        name="English Assistant"
+    ),
+    "roman_urdu": Agent(
+        instructions="Tum Roman Urdu mein jawab do, casual aur friendly tone mein.",
+        name="Roman Urdu Dost"
+    ),
+}
 
-run_config = RunConfig(
-    model=model,
-    model_provider=provider,
-    tracing_disabled=True,
-)
+agents = {
+    "japanese": Agent(
+        instructions="You are a Japanese language assistant. Answer everything in Japanese.",
+        name="日本語アシスタント"
+    ),
+    "english": Agent(
+        instructions="You are an English language assistant. Answer in formal but clear English.",
+        name="English Assistant"
+    ),
+    "roman_urdu": Agent(
+        instructions="Tum Roman Urdu mein jawab do, casual aur friendly tone mein.",
+        name="Roman Urdu Dost"
+    ),
+}
+@cl.set_starters
+async def set_starters():
+    return [
+        cl.Starter(label="Talk in Japanese", message="__select_agent__:japanese", icon="/public/japan.svg"),
+        cl.Starter(label="Speak in English", message="__select_agent__:english", icon="/public/uk.svg"),
+        cl.Starter(label="Roman Urdu Chitchat", message="__select_agent__:roman_urdu", icon="/public/urdu.svg"),
+    ]
 
-agent1 = Agent(
-    instructions="You are a helpful assistant that can answer questions and help with tasks.",
-    name="Assistant",
-)
 
 @cl.on_chat_start
-async def hendle_chat_start():
-    cl.user_session.set("history", [])
-    await cl.Message(content="Hello! How can I assist you today?").send()
+async def handle_chat_start():
+    cl.user_session.set("user_id", "admin")
+
+    # Load history
+    if not cl.user_session.get("history"):
+        try:
+            with open("chat_history_admin.json", "r") as f:
+                history = json.load(f)
+                cl.user_session.set("history", history)
+        except FileNotFoundError:
+            cl.user_session.set("history", [])
+
+    # Set default agent
+    if not cl.user_session.get("agent_key"):
+        cl.user_session.set("agent_key", "developer")
 
 @cl.on_chat_end
 async def save_history():
@@ -43,18 +97,31 @@ async def save_history():
     with open(f"chat_history_{timestamp}.json", "w") as f:
         json.dump(history, f, indent=2)
 
-
 @cl.on_message
 async def handle_message(message: cl.Message):
-    history = cl.user_session.get("history")
+    if message.content.startswith("__select_agent__:"):
+        key = message.content.split(":")[1]
+        cl.user_session.set("agent_key", key)
+        await cl.Message(content=f"✅ Agent **{key}** selected! Ab aap message likh saktay hain.").send()
+        return
 
-
+    agent_key = cl.user_session.get("agent_key", "developer")
+    selected_agent = agents.get(agent_key)
+    history = cl.user_session.get("history", [])
     history.append({"role": "user", "content": message.content})
+
+    # ✨ Language agents use their own RunConfig
+    if agent_key in run_configs:
+        config = run_configs[agent_key]
+    else:
+        config = RunConfig(model=models["english"], model_provider=providers["english"], tracing_disabled=True)
+
     result = await Runner.run(
-    agent1,
-    input=history,
-    run_config=run_config,
+        selected_agent,
+        input=history,
+        run_config=config,
     )
+
     history.append({"role": "assistant", "content": result.final_output})
     cl.user_session.set("history", history)
     await cl.Message(content=result.final_output).send()
